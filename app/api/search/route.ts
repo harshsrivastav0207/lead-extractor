@@ -65,7 +65,7 @@ export async function POST(request: Request) {
         searchStringsArray: [searchTerm],
         maxCrawledPlacesPerSearch: 10,
         language: "en",
-        scrapeContacts: false,
+        scrapeContacts: true,
         maximumLeadsEnrichmentRecords: 0,
         maxReviews: 0,
         maxImages: 0,
