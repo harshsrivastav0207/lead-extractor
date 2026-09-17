@@ -38,6 +38,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searched, setSearched] = useState(false);
+  const [maxResults, setMaxResults] = useState("10");
 
   const handleSearch = async () => {
     const queries = queryText
@@ -61,7 +62,7 @@ export default function Home() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ queries }),
+        body: JSON.stringify({ queries, maxResults }),
       });
 
       const data = await response.json();
@@ -285,20 +286,35 @@ Gyms in Toronto`}
                     One query per line
                   </span>
 
-                  <Button
-                    className="h-10 rounded-lg bg-slate-950 px-5 text-sm font-semibold shadow-lg shadow-slate-900/10 transition hover:bg-slate-800"
-                    onClick={handleSearch}
-                    disabled={loading}
-                  >
-                    {loading ? (
-                      <span className="flex items-center gap-2">
-                        <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                        Searching...
-                      </span>
-                    ) : (
-                      "Search leads →"
-                    )}
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={maxResults}
+                      onChange={(e) => setMaxResults(e.target.value)}
+                      disabled={loading}
+                      className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-600 outline-none focus:border-indigo-300 focus:ring-4 focus:ring-indigo-50"
+                    >
+                      <option value="10">10 leads</option>
+                      <option value="25">25 leads</option>
+                      <option value="50">50 leads</option>
+                      <option value="100">100 leads</option>
+                      <option value="all">All available</option>
+                    </select>
+
+                    <Button
+                      className="h-10 rounded-lg bg-slate-950 px-5 text-sm font-semibold shadow-lg shadow-slate-900/10 transition hover:bg-slate-800"
+                      onClick={handleSearch}
+                      disabled={loading}
+                    >
+                      {loading ? (
+                        <span className="flex items-center gap-2">
+                          <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                          Searching...
+                        </span>
+                      ) : (
+                        "Search leads →"
+                      )}
+                    </Button>
+                  </div>
                 </div>
               </div>
 

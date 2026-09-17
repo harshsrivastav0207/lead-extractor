@@ -21,7 +21,7 @@ function parseSearchQuery(query: string) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { queries } = body;
+    const { queries, maxResults } = body;
 
     if (!Array.isArray(queries) || queries.length === 0) {
       return NextResponse.json(
@@ -32,7 +32,7 @@ export async function POST(request: Request) {
 
     const cleanedQueries = queries
       .map((q: unknown) => (typeof q === "string" ? q.trim() : ""))
-      .filter((q) => q.length > 0);
+      .filter((q: string) => q.length > 0);
 
     if (cleanedQueries.length === 0) {
       return NextResponse.json(
@@ -40,6 +40,12 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
+
+    // Validate the selected result limit.
+    const allowedLimits = ["10", "25", "50", "100", "all"];
+    const selectedLimit = allowedLimits.includes(String(maxResults))
+      ? String(maxResults)
+      : "10";
 
     const apiToken = process.env.APIFY_API_TOKEN;
 
@@ -63,7 +69,6 @@ export async function POST(request: Request) {
 
       const apifyInput: Record<string, unknown> = {
         searchStringsArray: [searchTerm],
-        maxCrawledPlacesPerSearch: 10,
         language: "en",
         scrapeContacts: true,
         maximumLeadsEnrichmentRecords: 0,
@@ -74,6 +79,13 @@ export async function POST(request: Request) {
         scrapePlaceDetailPage: false,
         enableCompetitorAnalysis: false,
       };
+
+      // Apply selected lead limit.
+      // "all" means we leave the field empty so Apify can return
+      // all available places for the search.
+      if (selectedLimit !== "all") {
+        apifyInput.maxCrawledPlacesPerSearch = Number(selectedLimit);
+      }
 
       if (location) {
         apifyInput.locationQuery = location;
@@ -89,6 +101,7 @@ export async function POST(request: Request) {
 
       if (!apifyResponse.ok) {
         const errorText = await apifyResponse.text();
+
         console.error("Apify error:", errorText);
 
         return NextResponse.json(
