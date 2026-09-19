@@ -297,7 +297,6 @@ Gyms in Toronto`}
                       <option value="25">25 leads</option>
                       <option value="50">50 leads</option>
                       <option value="100">100 leads</option>
-                      <option value="all">All available</option>
                     </select>
 
                     <Button

@@ -41,12 +41,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // Validate the selected result limit.
-    const allowedLimits = ["10", "25", "50", "100", "all"];
-    const selectedLimit = allowedLimits.includes(String(maxResults))
-      ? String(maxResults)
-      : "10";
-
     const apiToken = process.env.APIFY_API_TOKEN;
 
     if (!apiToken) {
@@ -55,6 +49,20 @@ export async function POST(request: Request) {
         { status: 500 }
       );
     }
+
+    /*
+     * SAFETY LIMIT
+     *
+     * The API will NEVER request more than 100 results
+     * for a single search query.
+     */
+    const allowedLimits = [10, 25, 50, 100];
+
+    const requestedLimit = Number(maxResults);
+
+    const selectedLimit = allowedLimits.includes(requestedLimit)
+      ? requestedLimit
+      : 10;
 
     const actorId = "compass~crawler-google-places";
 
@@ -69,9 +77,17 @@ export async function POST(request: Request) {
 
       const apifyInput: Record<string, unknown> = {
         searchStringsArray: [searchTerm],
+
+        // HARD SAFETY LIMIT: maximum 100
+        maxCrawledPlacesPerSearch: selectedLimit,
+
         language: "en",
+
+        // Email enrichment
         scrapeContacts: true,
         maximumLeadsEnrichmentRecords: 0,
+
+        // Reduce unnecessary data/cost
         maxReviews: 0,
         maxImages: 0,
         includeWebResults: false,
@@ -79,13 +95,6 @@ export async function POST(request: Request) {
         scrapePlaceDetailPage: false,
         enableCompetitorAnalysis: false,
       };
-
-      // Apply selected lead limit.
-      // "all" means we leave the field empty so Apify can return
-      // all available places for the search.
-      if (selectedLimit !== "all") {
-        apifyInput.maxCrawledPlacesPerSearch = Number(selectedLimit);
-      }
 
       if (location) {
         apifyInput.locationQuery = location;
@@ -146,38 +155,67 @@ export async function POST(request: Request) {
 
     const normalizedResults = deduped.map((item, index) => ({
       serial: index + 1,
+
       name: item.title || item.name || null,
-      phone: item.phone || item.phoneUnformatted || null,
+
+      phone:
+        item.phone ||
+        item.phoneUnformatted ||
+        null,
+
       email:
         item.email ||
-        (Array.isArray(item.emails) ? item.emails[0] : null) ||
+        (Array.isArray(item.emails)
+          ? item.emails[0]
+          : null) ||
         null,
-      address: item.address || item.street || null,
+
+      address:
+        item.address ||
+        item.street ||
+        null,
+
       city: item.city || null,
+
       state: item.state || null,
-      country: item.country || item.countryCode || null,
-      postalCode: item.postalCode || null,
+
+      country:
+        item.country ||
+        item.countryCode ||
+        null,
+
+      postalCode:
+        item.postalCode ||
+        null,
+
       latitude:
         item.location?.lat ??
         item.latitude ??
         null,
+
       longitude:
         item.location?.lng ??
         item.longitude ??
         null,
+
       website:
         item.website ||
         item.webSite ||
         item.web_site ||
         null,
+
       category:
         item.categoryName ||
         (Array.isArray(item.categories)
           ? item.categories[0]
           : item.category) ||
         null,
+
       source: "Google Maps via Apify",
-      sourceUrl: item.url || null,
+
+      sourceUrl:
+        item.url ||
+        null,
     }));
 
     return NextResponse.json({
