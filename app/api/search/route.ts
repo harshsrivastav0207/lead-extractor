@@ -57,11 +57,14 @@ export async function POST(request: Request) {
       : 10;
 
     // ================================================================
-    // DEMO MODE — guaranteed early return. No Apify call is possible.
+    // DEMO MODE — FAIL-SAFE DEFAULT
     //
-    // Defensive check: trims whitespace, lowercases, and accepts
-    // "true", "1", or "yes" so an env-var value like "true\n" or
-    // "True" cannot accidentally fall through to Apify.
+    // Demo mode is ON by default. Real Apify mode is only used when
+    // DEMO_MODE is explicitly set to "false", "0", or "no".
+    //
+    // This means: even if the env var is missing, misconfigured, or
+    // has trailing whitespace, the app falls back to demo data
+    // instead of making a real Apify request.
     // ================================================================
     const demoModeRaw = process.env.DEMO_MODE ?? "(undefined)";
     const demoMode = String(demoModeRaw).trim().toLowerCase();
@@ -70,7 +73,10 @@ export async function POST(request: Request) {
       `[DEMO MODE DEBUG] raw="${demoModeRaw}" normalized="${demoMode}"`
     );
 
-    if (demoMode === "true" || demoMode === "1" || demoMode === "yes") {
+    const isDemoMode =
+      demoMode !== "false" && demoMode !== "0" && demoMode !== "no";
+
+    if (isDemoMode) {
       const demoResults = getDemoLeads(selectedLimit);
 
       return NextResponse.json({
@@ -80,6 +86,9 @@ export async function POST(request: Request) {
       });
     }
 
+    // ================================================================
+    // REAL MODE — only reached when DEMO_MODE is explicitly false.
+    // ================================================================
     const apiToken = process.env.APIFY_API_TOKEN;
 
     if (!apiToken) {
