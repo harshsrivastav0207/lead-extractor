@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getDemoLeads } from "@/data/demo-leads";
 
 function parseSearchQuery(query: string) {
   const cleaned = query.trim();
@@ -41,15 +42,6 @@ export async function POST(request: Request) {
       );
     }
 
-    const apiToken = process.env.APIFY_API_TOKEN;
-
-    if (!apiToken) {
-      return NextResponse.json(
-        { error: "Server configuration error: API token missing." },
-        { status: 500 }
-      );
-    }
-
     /*
      * SAFETY LIMIT
      *
@@ -63,6 +55,28 @@ export async function POST(request: Request) {
     const selectedLimit = allowedLimits.includes(requestedLimit)
       ? requestedLimit
       : 10;
+
+    // ================================================================
+    // DEMO MODE — guaranteed early return. No Apify call is possible.
+    // ================================================================
+    if (process.env.DEMO_MODE === "true") {
+      const demoResults = getDemoLeads(selectedLimit);
+
+      return NextResponse.json({
+        count: demoResults.length,
+        queries: cleanedQueries,
+        results: demoResults,
+      });
+    }
+
+    const apiToken = process.env.APIFY_API_TOKEN;
+
+    if (!apiToken) {
+      return NextResponse.json(
+        { error: "Server configuration error: API token missing." },
+        { status: 500 }
+      );
+    }
 
     const actorId = "compass~crawler-google-places";
 

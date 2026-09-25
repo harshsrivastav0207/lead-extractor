@@ -89,8 +89,8 @@ export default function Home() {
   };
 
   const buildExportRows = () => {
-    return results.map((lead) => ({
-      "S.No": lead.serial,
+    return results.map((lead, index) => ({
+      "S.No": index + 1,
       "Business Name": lead.name || "",
       Phone: lead.phone || "",
       Email: lead.email || "",
@@ -477,7 +477,7 @@ Gyms in Toronto`}
                 </div>
 
                 <div className="text-xs text-slate-400">
-                  Source: Google Maps via Apify
+                  Source: {results[0]?.source || "Google Maps via Apify"}
                 </div>
               </div>
 
@@ -541,13 +541,13 @@ Gyms in Toronto`}
                     </TableHeader>
 
                     <TableBody>
-                      {results.map((lead) => (
+                      {results.map((lead, index) => (
                         <TableRow
-                          key={lead.serial}
+                          key={`${lead.name}-${lead.address}-${index}`}
                           className="border-slate-100 transition-colors hover:bg-indigo-50/30"
                         >
                           <TableCell className="px-5 text-xs font-semibold text-slate-400">
-                            {String(lead.serial).padStart(2, "0")}
+                            {String(index + 1).padStart(2, "0")}
                           </TableCell>
 
                           <TableCell className="max-w-[240px]">
