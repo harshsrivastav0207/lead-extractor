@@ -58,8 +58,19 @@ export async function POST(request: Request) {
 
     // ================================================================
     // DEMO MODE — guaranteed early return. No Apify call is possible.
+    //
+    // Defensive check: trims whitespace, lowercases, and accepts
+    // "true", "1", or "yes" so an env-var value like "true\n" or
+    // "True" cannot accidentally fall through to Apify.
     // ================================================================
-    if (process.env.DEMO_MODE === "true") {
+    const demoModeRaw = process.env.DEMO_MODE ?? "(undefined)";
+    const demoMode = String(demoModeRaw).trim().toLowerCase();
+
+    console.log(
+      `[DEMO MODE DEBUG] raw="${demoModeRaw}" normalized="${demoMode}"`
+    );
+
+    if (demoMode === "true" || demoMode === "1" || demoMode === "yes") {
       const demoResults = getDemoLeads(selectedLimit);
 
       return NextResponse.json({
